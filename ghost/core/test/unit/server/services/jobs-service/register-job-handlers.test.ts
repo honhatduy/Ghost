@@ -5,6 +5,8 @@ import logging from '@tryghost/logging';
 import { JobsService } from '../../../../../core/server/services/jobs-service/jobs-service';
 import ExternalMediaInliner from '../../../../../core/server/services/media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../../../../../core/server/services/media-inliner/external-media-inliner-job';
+import UpdateCheckJob from '../../../../../core/server/services/update-check/jobs/update-check-job';
+import UpdateCheckBootJob from '../../../../../core/server/services/update-check/jobs/update-check-boot-job';
 
 const registerJobHandlers =
   require('../../../../../core/server/services/jobs-service/register-job-handlers').default;
@@ -115,5 +117,16 @@ describe('register-job-handlers', function () {
     await assert.rejects(async () => {
       await externalMediaInlinerHandler(job);
     }, error);
+  });
+
+  // Under the test env the update check executor exits at its environment
+  // gate, so invoking the registered handler proves the wiring without
+  // touching the network.
+  it('registers both update-check job types against the shared executor', async function () {
+    assert.ok(jobsService.handle.getCall(3).calledWith(UpdateCheckJob));
+    assert.ok(jobsService.handle.getCall(4).calledWith(UpdateCheckBootJob));
+
+    await jobsService.handle.getCall(3).args[1](new UpdateCheckJob());
+    await jobsService.handle.getCall(4).args[1](new UpdateCheckBootJob());
   });
 });

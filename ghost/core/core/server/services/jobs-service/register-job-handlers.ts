@@ -8,6 +8,10 @@ import * as gifts from '../gifts';
 import CleanGiftsJob from '../gifts/jobs/clean-gifts-job';
 import ExternalMediaInliner from '../media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../media-inliner/external-media-inliner-job';
+import UpdateCheckJob from '../update-check/jobs/update-check-job';
+import UpdateCheckBootJob from '../update-check/jobs/update-check-boot-job';
+
+const updateCheck = require('../update-check');
 
 interface RegisterJobHandlersDependencies {
   jobsService: JobsService;
@@ -56,5 +60,13 @@ export default function registerJobHandlers({
 
   jobsService.handle(ExternalMediaInlinerJob, async (job) => {
     await mediaInliner.inline(job.domains);
+  });
+
+  jobsService.handle(UpdateCheckJob, async () => {
+    await updateCheck({ rethrowErrors: true });
+  });
+
+  jobsService.handle(UpdateCheckBootJob, async () => {
+    await updateCheck({ rethrowErrors: true });
   });
 }
