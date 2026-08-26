@@ -36,6 +36,37 @@ async function openMappingStep(labs: Record<string, boolean>) {
 }
 
 describe('Import members gate', () => {
+  it.each([false, true])(
+    'inherits portal typography in the import flow (custom fields: %s)',
+    async (membersCustomFields) => {
+      await openMappingStep({ admin7PageChrome: true, membersCustomFields });
+      const modal = membersScreen.dialog();
+      await expect.element(modal).toBeVisible();
+      expect(modal.element().closest('#root')).toBeNull();
+      const select = page.getByRole('combobox').first();
+      await expect.element(select).toBeVisible();
+      const hasFont = () => getComputedStyle(modal.element()).fontFamily.includes('Inter Admin 7');
+      await expect.poll(hasFont).toBe(true);
+      expect(getComputedStyle(select.element()).fontVariationSettings).toBe('"opsz" 14');
+      expect(getComputedStyle(select.element()).fontFeatureSettings).toBe(
+        '"cv05", "dlig", "ss01", "zero"',
+      );
+
+      const originalModal = modal.element();
+      try {
+        await page.viewport(800, 800);
+        await expect.element(modal).toBeVisible();
+        expect(modal.element()).toBe(originalModal);
+        await expect.poll(hasFont).toBe(false);
+        expect(getComputedStyle(select.element()).fontVariationSettings).toBe('normal');
+        await page.viewport(801, 800);
+        await expect.poll(hasFont).toBe(true);
+      } finally {
+        await page.viewport(1280, 800);
+      }
+    },
+  );
+
   it('serves the custom fields import when the flag is on', async () => {
     await openMappingStep({ membersCustomFields: true });
 
