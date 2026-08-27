@@ -99,15 +99,21 @@ const refusedDestination = (error: unknown): string | undefined => {
 };
 
 /**
- * Where a collected value is kept.
+ * Which custom field a value collected during checkout gets saved into. This covers only
+ * the three values Stripe collects itself: the recipient's name, their address, and their
+ * phone number. Questions the publisher adds to the checkout are not covered, and are
+ * refused unless the field they name already exists.
  *
- * The publisher picks when they can manage fields. Otherwise whatever is already bound
- * stands, and a collection switched on for the first time lands in the port's default
- * field, which the server creates if the site does not keep it yet.
+ * A publisher allowed to manage custom fields gets a picker for each of those three values
+ * in the tier's settings, and their choice is used. A publisher who is not allowed gets no
+ * picker, so the choice is made here: keep whatever field that value is already saved
+ * into, and when there is none, use a fixed default field for that value, which the server
+ * creates on the site if it is missing.
  *
- * Falling back to what is bound before falling back to the default is the whole point: a
- * publisher who chose a field of their own while they could manage fields must not have
- * that choice quietly replaced by a later save made without the pickers.
+ * Preferring the field already in use over the default is why the order matters. Without
+ * it, a publisher who had chosen a field of their own while they could manage fields would
+ * find their shipping addresses silently saving into a different field the next time
+ * anyone changed an unrelated setting on that tier.
  */
 const destinationFor = (port: StripePort, chosen: string | null) => chosen ?? PORT_FIELD[port].key;
 
@@ -291,9 +297,6 @@ const TierCheckoutCollection = forwardRef<
   const { mutateAsync: editCheckoutConfig } = useEditTierCheckoutConfig();
   const handleError = useHandleError();
 
-  // Binding a collection to a field of the publisher's choosing is field management, so it
-  // rides that flag rather than this card's. Without it the card is toggles only, and the
-  // keys are settled by `destinationFor` instead of by a picker.
   const canManageFields = useFeatureFlag('membersCustomFields');
   const { data: fieldsData } = useBrowseMemberCustomFields({ enabled: canManageFields });
   const allFields = fieldsData?.members_custom_fields ?? [];
@@ -345,8 +348,6 @@ const TierCheckoutCollection = forwardRef<
       return undefined;
     };
     if (state.shipping.collect) {
-      // Only a chosen destination can be wrong. Without the pickers there is nothing here
-      // for the publisher to correct, so the checks that would blame them are not run.
       if (canManageFields) {
         newErrors.shippingField = destinationError(
           state.shipping.addressFieldKey,

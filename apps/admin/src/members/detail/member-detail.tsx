@@ -73,8 +73,6 @@ const MemberDetailPage: React.FC<MemberDetailPageProps> = ({
   const isCreating = memberId === CREATE_ID;
 
   // `include=tiers` mirrors the Ember route so complimentary tiers arrive with the member.
-  // Custom field values need no include: a read carries them whenever the site defines any
-  // field, the same way it carries labels.
   const { data, isLoading, error, refetch } = useMember(memberId, {
     enabled: !!memberId && !isCreating,
     searchParams: { include: 'tiers' },

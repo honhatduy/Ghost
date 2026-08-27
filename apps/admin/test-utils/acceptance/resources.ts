@@ -330,10 +330,11 @@ export interface FakeMembersOptions {
  * `options.labels`, tiers from `options.tiers`; offers, newsletters and custom
  * field definitions empty.
  *
- * Custom field definitions are chrome like the rest: the filter bar asks for them on
- * every members mount, because what the site defines is what decides whether custom
- * fields appear at all. A spec that wants some declares them with
- * `fakeMemberCustomFields` after this call.
+ * Every members screen asks the server which custom fields the publisher has defined,
+ * because that list is what decides whether custom fields appear in the filter bar at all.
+ * This harness fails any test that makes a request nothing has stubbed, so an empty list is
+ * stubbed here on behalf of the many specs that have nothing to do with custom fields. A
+ * spec that wants some calls `fakeMemberCustomFields` after this one.
  */
 export function fakeMembers(
   members: RespondWith<Member>,

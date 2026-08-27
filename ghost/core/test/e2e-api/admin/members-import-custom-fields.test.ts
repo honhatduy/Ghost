@@ -408,8 +408,6 @@ describe('Members import — custom fields', function () {
     assert.notEqual(await findMember(email), undefined);
   });
 
-  // On a site that defines no fields, a custom_fields.* column is dropped like any other
-  // unknown one: the member imports, and nothing is written against them.
   it('ignores custom field columns on a site that defines none', async function () {
     const email = 'cf-no-fields@example.com';
 

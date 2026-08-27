@@ -321,8 +321,6 @@ describe('Members API — exportCSV with custom fields', function () {
     assert.equal(rowFor(member.id)[columnFor(kept.key)], 'Bex');
   });
 
-  // The state every site that has not asked for this feature is in, and the one the export
-  // format has to stay identical in: no fields defined, so no custom field columns.
   it('omits custom field columns on a site that defines none', async function () {
     const member = await createMember({});
 

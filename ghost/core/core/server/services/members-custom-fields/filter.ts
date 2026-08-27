@@ -201,8 +201,7 @@ export function createCustomFieldsFilterTransformer() {
  * rows (one per field, or per part of a composite field), and a predicate asks whether
  * one of them matches, so this joins the values table on member_id and mongo-knex emits
  * it as a correlated `members.id IN (…)` subquery — composing with every other member
- * filter. Registered on every site: with no definitions there are no value rows, so the
- * predicate simply matches no members.
+ * filter.
  */
 export const CUSTOM_FIELDS_RELATION = {
   tableName: 'members_custom_field_values',

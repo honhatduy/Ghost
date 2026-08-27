@@ -39,13 +39,8 @@ const ADDRESS = { line1: '1 Main St', city: 'Berlin', postal_code: '10115', coun
 
 /**
  * The world the member detail screen reads at mount, plus the custom-fields
- * definitions. Values ride the member read payload (`custom_fields`), exactly as the API
- * returns them on a site that defines fields. The world is stateful: a PUT's merge patch
- * is applied (null deletes), so the refetch a save triggers returns the saved state.
- *
- * No labs override anywhere in this file, deliberately: the section appears because the
- * site defines fields, not because a flag is on, and rendering with the default (nothing
- * enabled) is what pins that.
+ * definitions. The world is stateful: a PUT's merge patch is applied (null deletes), so
+ * the refetch a save triggers returns the saved state.
  */
 function fakeMemberDetailWorld(m: Member, initialValues: Record<string, unknown>) {
   let current: Record<string, unknown> = { ...m };

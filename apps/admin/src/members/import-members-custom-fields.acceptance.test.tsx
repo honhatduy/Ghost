@@ -761,9 +761,6 @@ describe('Import members custom fields', () => {
     await expect.element(importMembersScreen.leaveConfirmationText()).toBeVisible();
   });
 
-  // Mapping a column onto a field the site already defines is not the flag's business —
-  // what the site defines is. What the flag decides is whether this dialog may define a
-  // new one, so off, the fields are all still offered and only the way to add one goes.
   describe('without field management', () => {
     it('offers the defined fields, but no way to make another', async () => {
       const { browseApi } = fakeCustomFieldsWorld([NICKNAME_FIELD]);
@@ -778,8 +775,6 @@ describe('Import members custom fields', () => {
       await expect.element(importMembersScreen.option('Nickname')).toBeVisible();
       await expect.element(importMembersScreen.addCustomFieldOption()).not.toBeInTheDocument();
 
-      // The definitions are asked for whatever the flag says: they are what the mapping
-      // step offers, and that query also gates the first parse of the file.
       expect(browseApi.requests.length).toBeGreaterThan(0);
     });
 

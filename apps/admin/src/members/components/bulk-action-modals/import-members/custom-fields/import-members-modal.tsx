@@ -50,10 +50,8 @@ import {
   isImportMembersCompleteResponse,
   useImportMembers,
 } from '@tryghost/admin-x-framework/api/members';
-import {
-  memberCustomFieldCsvColumns,
-  useBrowseMemberCustomFields,
-} from '@tryghost/admin-x-framework/api/member-custom-fields';
+import { memberCustomFieldCsvColumns } from '@tryghost/admin-x-framework/api/member-custom-fields';
+import { useCustomFieldDefinitions } from '@/shared/member-custom-fields/use-definitions';
 import { parseCSV } from '@/members/components/bulk-action-modals/import-members/csv';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react';
 import { useFeatureFlag } from '@tryghost/admin-x-framework/hooks';
@@ -77,17 +75,8 @@ export function ImportMembersModal({
   const { mutateAsync: importMembers } = useImportMembers();
   const importMemberTier = useFeatureFlag('importMemberTier');
 
-  // Mapping onto a field the site already defines is not this dialog's decision, nor a
-  // flag's: a site that defines none gets an empty list and no custom field targets. What
-  // the flag decides is whether the mapping step may create a field that does not exist
-  // yet, which is definition management and belongs with the rest of it.
   const canCreateCustomFields = useFeatureFlag('membersCustomFields');
-  // Defined custom fields become mapping targets. Browse returns active fields only, which
-  // are the ones the importer writes to. A failure is handled here, by importing with
-  // membership fields alone, so it needs no toast of its own.
-  const { data: customFieldsData, isError: customFieldsFailed } = useBrowseMemberCustomFields({
-    defaultErrorHandler: false,
-  });
+  const { data: customFieldsData, isError: customFieldsFailed } = useCustomFieldDefinitions();
   // A field created from the mapping step is in here the moment it is created: the create
   // mutation puts it into the cached list, so there is no window where a row points at a
   // column the picker cannot name yet.

@@ -1080,10 +1080,6 @@ describe('Tier Checkout Admin API', function () {
   });
 
   describe('Flag', function () {
-    // What a tier collects is its own flag, separate from managing the fields the answers
-    // land in: a publisher can be given shipping collection without being given the field
-    // editor, and the keys are then settled for them.
-    //
     // Reading is open, because a tier that collects nothing reads the same either way and
     // the checkout has to build its session whatever the flag says. Configuring is not.
     it('still reads with the flag off', async function () {
@@ -1100,13 +1096,6 @@ describe('Tier Checkout Admin API', function () {
         .expectStatus(404);
     });
 
-    // Managing fields and configuring what a checkout collects are separate grants, so a
-    // site with only the collection flag configures normally — the destination keys are
-    // settled for it rather than picked, and the fields are provisioned on save. What gets
-    // made is pinned because the publisher meets these fields everywhere except the one
-    // place that could change them: they appear in the filter picker, in exported columns
-    // and on a member's page, while the editor that could rename or remove them is behind
-    // the other flag. Provisioning is one-way in this state.
     it('provisions the destination fields when they cannot be managed', async function () {
       mockManager.mockLabsDisabled('membersCustomFields');
       await agent

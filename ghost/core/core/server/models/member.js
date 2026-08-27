@@ -194,8 +194,7 @@ const Member = ghostBookshelf.Model.extend(
     // every members query routes its filter through (list, CSV export, bulk edit/destroy,
     // count, email send all reach it via findPage or getFilteredCollectionQuery) — so a
     // saved `custom_fields.*` segment works the same everywhere without each call site
-    // wiring it. Runs only when the filter names the relation; the transformer maps the
-    // public `key`/`value` grammar onto the leaf-row columns.
+    // wiring it.
     applyDefaultAndCustomFilters(options) {
       if (options.filter && options.filter.includes(`${CUSTOM_FIELDS_RELATION.tableNameAs}.`)) {
         const transformer = createCustomFieldsFilterTransformer();
@@ -208,10 +207,6 @@ const Member = ghostBookshelf.Model.extend(
 
     filterRelations() {
       return {
-        // Registered on every site. A site that has defined no custom fields has no
-        // values either, so the relation resolves to nothing and a `custom_fields.*`
-        // filter matches no members — the same answer it gives for a field that exists
-        // and holds no values, rather than a separate not-here case downstream.
         custom_fields: CUSTOM_FIELDS_RELATION,
         labels: {
           tableName: 'labels',

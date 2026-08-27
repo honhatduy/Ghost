@@ -436,8 +436,6 @@ export function useMemberFilterFields({
 
     const allCustomFieldFields = [...customFieldFields, ...archivedFieldFields];
 
-    // Nothing defined yet means nothing to filter on, so the group stays out of
-    // the picker entirely rather than showing a section that can't be used.
     if (allCustomFieldFields.length > 0) {
       groups.push({
         group: 'Custom fields',

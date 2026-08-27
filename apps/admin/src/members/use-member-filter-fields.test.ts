@@ -290,8 +290,6 @@ describe('useMemberFilterFields', () => {
   });
 
   it('omits the custom fields group when none are passed at all', () => {
-    // What the site defines is the only thing that puts the group in the picker, so a
-    // caller that has nothing to offer gets no group rather than an empty one.
     const { result } = renderHook(() => useMemberFilterFields({ siteTimezone: 'UTC' }));
 
     expect(result.current.map((group) => group.group)).not.toContain('Custom fields');

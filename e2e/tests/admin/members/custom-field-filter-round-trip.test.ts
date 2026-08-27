@@ -13,8 +13,7 @@ import { usePerTestIsolation } from '@/helpers/playwright/isolation';
  * parses back to exactly what produced it.
  *
  * React member detail (the value editor is React-only) plus the membersCustomFields flag,
- * which is what lets the test define a field in Settings. Filtering itself needs no flag —
- * it follows from a field existing.
+ * which is what lets the test define a field in Settings.
  */
 usePerTestIsolation();
 

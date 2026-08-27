@@ -27,7 +27,7 @@ import {
 } from './hooks/use-members-filter-state';
 import { useActiveMemberView, useMemberViews } from './hooks/use-member-views';
 import { useBrowseConfig } from '@tryghost/admin-x-framework/api/config';
-import { useBrowseMemberCustomFieldsIncludingArchived } from '@tryghost/admin-x-framework/api/member-custom-fields';
+import { useCustomFieldDefinitionsIncludingArchived } from '@/shared/member-custom-fields/use-definitions';
 import { useBrowseMembersInfinite } from '@tryghost/admin-x-framework/api/members';
 import { useDebouncedCallback } from 'use-debounce';
 import { useLocation, useSearchParams } from '@tryghost/admin-x-framework';
@@ -81,14 +81,12 @@ const MembersPage: React.FC<MembersPageProps> = ({
     () => filters.some((filter) => filter.field.startsWith(CUSTOM_FIELDS_PREFIX)),
     [filters],
   );
-  // Naming a column is all this is for, so a failure — including a Core that predates the
-  // endpoint — costs the column header its name and nothing else. Not worth a toast.
-  const { data: customFieldsData } = useBrowseMemberCustomFieldsIncludingArchived({
+  const { data: customFieldsData } = useCustomFieldDefinitionsIncludingArchived({
     enabled: hasCustomFieldFilter,
-    defaultErrorHandler: false,
   });
-  // Left undefined until the fetch lands (and while no filter names one) rather than
-  // defaulted to an empty array, so the identity the memos below depend on stays stable.
+  // Left undefined until the request finishes, rather than defaulted to an empty array.
+  // The memos below take this as a dependency, and a fresh empty array on each render
+  // would give them a new identity every time, recomputing the columns on every render.
   const customFields = customFieldsData?.members_custom_fields;
 
   const activeColumns = useMemo(() => {

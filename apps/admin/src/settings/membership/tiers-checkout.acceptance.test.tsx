@@ -51,10 +51,6 @@ function stripeSettings(overrides: Parameters<typeof settingsResponse>[0] = {}) 
 }
 
 // The flags live in settings and config in lockstep, and Stripe rides along in settings.
-//
-// Two of them: `stripeCheckoutCollection` is what puts the card on the tier at all, and
-// `membersCustomFields` is what adds the destination pickers to it. This is the both-on
-// world; the specs at the bottom cover collection without field management.
 const CHECKOUT_LABS = { stripeCheckoutCollection: true, membersCustomFields: true };
 const flagOnBoot = {
   browseConfig: { response: configResponse({ labs: CHECKOUT_LABS }) },
@@ -406,9 +402,6 @@ describe('Tier checkout collection', () => {
     await expect(settingsScreen.tierDetailModal()).toHaveCount(0);
   });
 
-  // A publisher can be given collection without being given the field editor. The card is
-  // then toggles alone: there is nothing to pick, so nothing to get wrong, and the server
-  // is told which field to keep each answer in on the publisher's behalf.
   describe('without field management', () => {
     const collectionOnly = { stripeCheckoutCollection: true, membersCustomFields: false };
     const collectionOnlyBoot = {
@@ -452,9 +445,6 @@ describe('Tier checkout collection', () => {
       });
     });
 
-    // The binding a publisher chose while they could manage fields has to survive a save
-    // made after that ability went away, or turning an unrelated toggle silently moves
-    // where their shipping addresses are kept.
     it('keeps a binding that was already chosen', async () => {
       const putApi = checkoutWorld([supporterConfig]);
       await renderAdminApp('/settings', { boot: collectionOnlyBoot });

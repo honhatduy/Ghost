@@ -115,8 +115,6 @@ export function makeImporter(deps: ImporterServices) {
       }),
   };
 
-  // The definitions decide, so the two halves round-trip or stay silent together: a site
-  // that defines none resolves empty here and every custom_fields.* column is dropped.
   const customFields: CustomFieldsImport = {
     activeFields: async () => deps.customFields.definitions.browse(),
     planWrite: (values) => deps.customFields.values.planWrite(values),
@@ -168,9 +166,7 @@ export function makeImporter(deps: ImporterServices) {
 
 // Build the members CSV exporter. The same composition root from the other direction:
 // knex and the members id lookup are wired here, and the custom fields definitions and
-// values services are injected (boot builds them before this one). What the site defines
-// alone decides whether custom field columns appear, so nothing conditional leaks into
-// the exporter itself.
+// values services are injected (boot builds them before this one).
 export function makeExporter({
   definitions,
   values,
@@ -194,8 +190,7 @@ export function makeExporter({
 
     customFields: {
       // Boot builds the definitions and values services before this one, so they
-      // are always present -- no not-initialised state to guard. A site that defines
-      // no fields gets an empty list, and no custom_fields.* columns.
+      // are always present -- no not-initialised state to guard.
       activeDefinitions: async (): Promise<CustomFieldDefinition[]> => definitions.browse(),
       valuesForMembers: (memberIds) => values.getValuesForMembers(memberIds),
     },

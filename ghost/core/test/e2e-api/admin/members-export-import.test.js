@@ -13,11 +13,8 @@ const { mockManager } = require('../../utils/e2e-framework');
 // A member exported to CSV should re-import cleanly: the export's CSV is a valid
 // import, and re-feeding it must not lose or corrupt the members. The fixture spans
 // every discrete concern the export carries so the loop exercises the whole column
-// set. Two suites run the loop either side of a site defining custom fields: the base
-// state (none defined, what every site that has not asked for this is in) and the
-// custom-fields state -- what the site defines changes the exported column set, so both
-// need covering. Each test isolates its own members with a per-test label so the
-// export/re-import touches only its set.
+// set. Each test isolates its own members with a per-test label so the export/re-import
+// touches only its set.
 describe('Members export -> import round-trip', function () {
   let request;
   let tier;
@@ -199,17 +196,13 @@ describe('Members export -> import round-trip', function () {
     mockManager.mockMail();
   });
 
-  afterEach(function () {
+  afterEach(async function () {
     mockManager.restore();
-  });
-
-  // The state every site that has not asked for this feature is in: no fields defined, so
-  // no custom_fields columns. Stated rather than assumed, because the tests below define
-  // fields and nothing between them clears the table.
-  it('round-trips the base member set with no custom fields defined', async function () {
     await models.Base.knex('members_custom_field_values').del();
     await models.Base.knex('members_custom_fields').del();
+  });
 
+  it('round-trips the base member set with no custom fields defined', async function () {
     const emails = await seedMembers('rtbase', baseLabel.get('name'));
     const csv = await exportSet(baseLabel.get('slug'));
 

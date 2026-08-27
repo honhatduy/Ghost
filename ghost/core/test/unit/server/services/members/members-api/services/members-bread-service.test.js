@@ -15,11 +15,8 @@ const createCustomFieldValuesStub = () => ({
   applyWrite: sinon.stub().resolves(),
 });
 
-// Whether the site defines any fields is what decides a member payload carries them, so
-// the definitions service is as required as the values one. Defaults to a site with none,
-// which is the shape every test here is written against.
-const createCustomFieldDefinitionsStub = (hasAny = false) => ({
-  hasAny: sinon.stub().resolves(hasAny),
+const createCustomFieldDefinitionsStub = (hasAnyActive = false) => ({
+  hasAnyActive: sinon.stub().resolves(hasAnyActive),
 });
 
 describe('MemberBreadService', function () {
@@ -580,9 +577,6 @@ describe('MemberBreadService', function () {
       assert.equal(member.email, memberModelJSON.email);
     });
 
-    // The identity reads behind a member's own session pass this, and they are on the path
-    // every themed page view of a signed-in member takes. Everything downstream drops
-    // custom fields, so asking for them costs two queries per page view for nothing.
     it('asks nothing about custom fields when the caller does not want them', async function () {
       const customFieldDefinitions = createCustomFieldDefinitionsStub(true);
       const customFieldValues = createCustomFieldValuesStub();
@@ -591,7 +585,7 @@ describe('MemberBreadService', function () {
       const member = await memberBreadService.read({ id: MEMBER_ID }, { withCustomFields: false });
 
       assert.equal(Object.hasOwn(member, 'custom_fields'), false);
-      assert.equal(customFieldDefinitions.hasAny.called, false);
+      assert.equal(customFieldDefinitions.hasAnyActive.called, false);
       assert.equal(customFieldValues.getValuesForMembers.called, false);
     });
 

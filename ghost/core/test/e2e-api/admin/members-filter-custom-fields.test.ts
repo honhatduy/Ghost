@@ -272,10 +272,6 @@ describe('Members filtering by custom fields', function () {
     it('matches no members rather than refusing the filter', async function () {
       await createMember();
 
-      // The relation is registered on every site, so the filter is understood wherever it
-      // is written. With nothing defined there are no value rows to join, so it matches
-      // nobody — the same answer a filter on a field that exists and holds no values
-      // gives, rather than a separate not-here case for callers to handle.
       assert.deepEqual(
         await browse("(custom_fields.key:'company'+custom_fields.value:'Ghost')"),
         [],

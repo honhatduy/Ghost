@@ -9,6 +9,10 @@ import {
   toOfferFilterDisplayValues,
   useMemberFilterFields,
 } from '@/members/use-member-filter-fields';
+import {
+  useCustomFieldDefinitions,
+  useCustomFieldDefinitionsIncludingArchived,
+} from '@/shared/member-custom-fields/use-definitions';
 import { CUSTOM_FIELDS_PREFIX } from '@/members/member-fields';
 import {
   useBrowseSettings,
@@ -21,10 +25,7 @@ import {
 import { getSiteTimezone } from '@tryghost/admin-x-framework/utils/get-site-timezone';
 import { useBrowseNewsletters } from '@tryghost/admin-x-framework/api/newsletters';
 import { useBrowseOffers } from '@tryghost/admin-x-framework/api/offers';
-import {
-  useBrowseMemberCustomFields,
-  useBrowseMemberCustomFieldsIncludingArchived,
-} from '@tryghost/admin-x-framework/api/member-custom-fields';
+import {} from '@tryghost/admin-x-framework/api/member-custom-fields';
 import type { MemberCustomField } from '@tryghost/admin-x-framework/api/member-custom-fields';
 import {
   useEmailPostValueSource,
@@ -121,15 +122,7 @@ const MembersFilters: React.FC<MembersFiltersProps> = ({
   const emailValueSource = useEmailPostValueSource();
   const labelValueSource = useLabelValueSource();
   const { valueSource: tierValueSource, hasMultipleTiers } = useTierValueSource();
-  // The picker lists active fields — the endpoint the members page has always used. A
-  // site that defines none gets an empty list, and no custom field entries in the picker.
-  //
-  // A failure is not worth a toast on a screen the publisher came to for something else,
-  // and Admin can run against a Core that predates this endpoint entirely: either way the
-  // picker simply offers no custom fields, which is what a site without them looks like.
-  const { data: customFieldsData } = useBrowseMemberCustomFields({
-    defaultErrorHandler: false,
-  });
+  const { data: customFieldsData } = useCustomFieldDefinitions();
   const customFields = customFieldsData?.members_custom_fields ?? EMPTY_CUSTOM_FIELDS;
   const referencedCustomFieldKeys = useMemo(
     () =>
@@ -145,9 +138,8 @@ const MembersFilters: React.FC<MembersFiltersProps> = ({
   // Only when the current filter references a custom field do we also pull the archived
   // ones, so a saved segment on a since-archived field still renders its read-only pill.
   // Skipped otherwise, so the common members view makes no extra request.
-  const { data: archivedCustomFieldsData } = useBrowseMemberCustomFieldsIncludingArchived({
+  const { data: archivedCustomFieldsData } = useCustomFieldDefinitionsIncludingArchived({
     enabled: referencedCustomFieldKeys.size > 0,
-    defaultErrorHandler: false,
   });
   const archivedCustomFields = useMemo(
     () =>

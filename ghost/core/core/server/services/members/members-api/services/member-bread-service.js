@@ -91,32 +91,27 @@ module.exports = class MemberBREADService {
 
   /**
    * @private
-   * Custom field values keyed by member id, or `null` when this site defines no
-   * custom fields — callers just check the result: `null` means omit the
-   * `custom_fields` key entirely, keeping a pre-feature member payload identical.
+   * Custom fields are extra fields a publisher can define on member records, such as a
+   * shoe size or a delivery address, beyond the ones Ghost ships with. Their values live
+   * in their own table, so this fetches them rather than loading them alongside the
+   * member.
    *
-   * Definitions decide it, not a flag. A site only has definitions because someone
-   * created them or configured a checkout that provisioned them, so this answers the
-   * question a flag was standing in for, and keeps answering it once the flags are
-   * gone. It also means the key never appears on a site that has not asked for the
-   * feature, which is the part worth protecting: an added key is permanent API surface
-   * and cannot be withdrawn.
+   * Returns null when the site has no custom fields defined. That tells the caller to
+   * leave the `custom_fields` key off the member payload entirely, rather than send an
+   * empty object. The distinction matters because most Ghost sites have never defined a
+   * custom field, and a key added to an API response cannot be taken back later without
+   * breaking whoever started reading it, so those sites keep the member payload they had
+   * before this feature existed.
    *
-   * A read gets values on that alone, with no opt-in include: a member's custom
-   * fields are their own data, like labels and tiers, which a read already returns
-   * unasked. `include` is for things that are expensive or aggregate
-   * (email_recipients, counts), and one flat lookup on a read that already issues a
-   * dozen queries is neither.
-   *
-   * Browse is the opposite — opt-in via `include=custom_fields`, exactly how
-   * `products`/`tiers` already behave: a read always carries them, a list only
-   * when asked. Read and browse must stay format-identical, so a browse that
-   * asks gets the same key a read gives unasked.
+   * Reading a single member returns that member's custom field values without the request
+   * asking for them. Listing many members returns each member's values only when the
+   * request asks, with `include=custom_fields`. Both must produce the same shape when
+   * values are present.
    * @param {string[]} memberIds
    * @returns {Promise<Map<string, Record<string, unknown>> | null>}
    */
   async fetchCustomFieldValues(memberIds) {
-    if (!(await this.customFieldDefinitions.hasAny())) {
+    if (!(await this.customFieldDefinitions.hasAnyActive())) {
       return null;
     }
 
@@ -397,9 +392,11 @@ module.exports = class MemberBREADService {
   /**
    * @param {object} data
    * @param {object} [options]
-   * @param {boolean} [options.withCustomFields] False to leave custom field values off the
-   *   result. For the identity reads behind a member's own session, which project the
-   *   member through allowlists that have never carried custom fields.
+   * @param {boolean} [options.withCustomFields] Pass false to leave custom field values
+   *   off the result. Ghost calls this method to identify a signed-in reader on every page
+   *   view of a themed site, and that caller renders the member through a fixed list of
+   *   fields that has never included custom ones. Fetching them there costs two database
+   *   queries per page view whose results are then thrown away.
    */
   async read(data, { withCustomFields = true, ...options } = {}) {
     const defaultWithRelated = [
@@ -462,9 +459,6 @@ module.exports = class MemberBREADService {
     const unsubscribeUrl = this.settingsHelpers.createUnsubscribeUrl(member.uuid);
     member.unsubscribe_url = unsubscribeUrl;
 
-    // Skipped for callers that will drop them anyway — see `withCustomFields`. Worth the
-    // parameter because this read is on the path every themed page view of a signed-in
-    // member takes, and the work here is two queries whose result that path discards.
     if (withCustomFields) {
       const customFields = await this.fetchCustomFieldValues([member.id]);
       if (customFields) {
@@ -585,9 +579,7 @@ module.exports = class MemberBREADService {
     delete data.last_seen_at;
 
     // Values live in their own table, so they come off the member data before
-    // the repository sees it — `custom_fields` is not a member column. Its presence is
-    // the signal to write; what it names is judged against the site's definitions, so a
-    // site that defines none refuses it rather than accepting a write it would discard.
+    // the repository sees it — `custom_fields` is not a member column.
     const customFields = data.custom_fields;
     const writeCustomFields = customFields !== undefined;
     delete data.custom_fields;

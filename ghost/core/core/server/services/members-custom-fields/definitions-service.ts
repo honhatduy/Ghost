@@ -118,24 +118,8 @@ export class CustomFieldDefinitionsService {
     this.getMaxDefinitions = getMaxDefinitions;
   }
 
-  /**
-   * Whether this site defines any custom fields at all, in any status.
-   *
-   * This is what decides whether a member payload carries a `custom_fields` key, so it
-   * asks about definitions rather than values: a site with fields but no answers to them
-   * yet still holds the shape, and a member who has answered nothing gets an empty
-   * object rather than no key.
-   *
-   * Any status counts, archived included. Values of an archived field are not returned,
-   * so counting only active ones would take the key off a site that archived its last
-   * field and put it back on restore — a payload shape flapping with a decision that has
-   * nothing to do with it. A site that has ever defined a field keeps the shape.
-   *
-   * `select 1 … limit 1` rather than a count: the answer is only ever used as a
-   * boolean, and this runs on every member read.
-   */
-  async hasAny(): Promise<boolean> {
-    const row = await this.knex(TABLE).select(this.knex.raw('1')).first();
+  async hasAnyActive(): Promise<boolean> {
+    const row = await activeFields(this.knex).select(this.knex.raw('1')).first();
     return Boolean(row);
   }
 

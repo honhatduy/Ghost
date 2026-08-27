@@ -6,10 +6,8 @@ import {
 } from './member-fields';
 import { FilterSegmentInput, FilterSegmentSelect } from '@tryghost/shade/patterns';
 import { createOperatorOptions } from '@/shared/filters';
-import {
-  memberCustomFieldParts,
-  useBrowseMemberCustomFieldsIncludingArchived,
-} from '@tryghost/admin-x-framework/api/member-custom-fields';
+import { memberCustomFieldParts } from '@tryghost/admin-x-framework/api/member-custom-fields';
+import { useCustomFieldDefinitionsIncludingArchived } from '@/shared/member-custom-fields/use-definitions';
 import type { CustomRendererProps } from '@tryghost/shade/patterns';
 
 // The dropdown entry has already chosen the field (its key is in `field.key` as
@@ -28,12 +26,8 @@ const CustomFieldFilterRenderer: React.FC<CustomRendererProps<string>> = ({
   readOnly,
 }) => {
   // Include-archived so an archived composite field's pill can still resolve its parts
-  // and show which one the saved segment filters on. A failure costs the pill its part
-  // names, not the members screen, so it stays quiet — every other read of this endpoint
-  // does the same, and a toast per rendered pill would be the loudest of them.
-  const { data } = useBrowseMemberCustomFieldsIncludingArchived({
-    defaultErrorHandler: false,
-  });
+  // and show which one the saved segment filters on.
+  const { data } = useCustomFieldDefinitionsIncludingArchived();
   const definitions = data?.members_custom_fields ?? [];
 
   const fieldKey = (field.key ?? '').slice(CUSTOM_FIELDS_PREFIX.length);

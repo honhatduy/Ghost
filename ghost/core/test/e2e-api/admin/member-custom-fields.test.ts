@@ -1380,8 +1380,6 @@ describe('Member Custom Fields Admin API', function () {
       // so neither path should see it as a write. Create and edit resolve that
       // question with the same schema, so they cannot drift on it.
       const payload = JSON.parse('{"__proto__": {"polluted": true}}');
-      // A field exists so the payload's shape is what is under test here, not whether the
-      // site carries custom fields at all.
       await createField({ name: 'Favourite topic' });
 
       await agent
@@ -1444,7 +1442,10 @@ describe('Member Custom Fields Admin API', function () {
 
       await setStatus(field.key, 'archived');
 
-      assert.deepEqual(await readValues(memberId), {});
+      // Archiving the site's only field takes the whole key off the payload, not just the
+      // value: with nothing active, the member reads exactly as it did before the site
+      // ever defined a field.
+      assert.equal(await readValues(memberId), undefined);
       // The row survives archiving — only the definition was hidden, and the
       // value is still attached to it (restoring the field brings it back).
       const rows = await models.Base.knex('members_custom_field_values').where(
@@ -1876,16 +1877,6 @@ describe('Member Custom Fields Admin API', function () {
     });
   });
 
-  // What decides whether a member payload carries custom fields is whether the site
-  // defines any, not a flag. A site that has never defined one is every Ghost site that
-  // has not asked for this feature, and its member payloads have to stay exactly as they
-  // were before the feature existed — an added key cannot be withdrawn later.
-  //
-  // The write side is not symmetrical, deliberately. A body naming a field is judged
-  // against the definitions wherever it arrives, so a site with none refuses it rather
-  // than accepting a write it would discard. Accepting it would mean a typo'd key reads
-  // as success, and it would make defining a first field turn a 200 into a 422 on an
-  // otherwise unrelated request.
   describe('Values on a site that defines no fields', function () {
     it('omits custom_fields from the member payload entirely', async function () {
       const memberId = await createMember();
@@ -1905,15 +1896,11 @@ describe('Member Custom Fields Admin API', function () {
         .expectStatus(422);
       assert.equal(body.errors[0].property, 'custom_fields.favourite_topic');
 
-      // The rest of the edit is refused with it, the same as any other invalid value.
       const { body: read } = await agent.get(`members/${memberId}/`).expectStatus(200);
       assert.notEqual(read.members[0].name, 'Renamed');
     });
 
     it('carries the key once a field exists, even with no value against it', async function () {
-      // The counterpart to the three above: the moment the site defines a field the shape
-      // changes, and a member who has answered nothing gets an empty object rather than
-      // no key. That is what makes the key's absence above meaningful.
       const memberId = await createMember();
       await createField({ name: 'Favourite topic' });
 

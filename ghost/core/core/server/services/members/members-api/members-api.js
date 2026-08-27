@@ -355,10 +355,6 @@ module.exports = function MembersAPI({
     return getMemberIdentityData(email);
   }
 
-  // Identity reads back a member's own session. Everything downstream projects the member
-  // through an allowlist that has never carried custom fields — the members API response,
-  // and the theme's `@member` — so fetching them here is work whose result is thrown away,
-  // on the path every themed page view of a signed-in member takes.
   async function getMemberIdentityData(email) {
     return memberBREADService.read({ email }, { withCustomFields: false });
   }

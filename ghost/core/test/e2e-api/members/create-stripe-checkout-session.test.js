@@ -1271,9 +1271,7 @@ describe('Create Stripe Checkout Session', function () {
     });
 
     // Turning the collection flag off has to stop the checkout asking, without anyone
-    // unpicking the configuration first. Managing the fields the answers land in is a
-    // separate flag and does not reach this: the configuration stands, it is just not
-    // acted on.
+    // unpicking the configuration first.
     it('asks for nothing with the flag off, however the tier is configured', async function () {
       const {
         body: {

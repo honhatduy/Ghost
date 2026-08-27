@@ -11,8 +11,7 @@ import { usePerTestIsolation } from '@/helpers/playwright/isolation';
  * round-trip they mock away.
  *
  * React member detail only (the editor is a React-only feature) plus the
- * membersCustomFields flag, which is what lets the test define a field in Settings. The
- * member-detail section itself needs no flag — it appears when a field exists.
+ * membersCustomFields flag, which is what lets the test define a field in Settings.
  */
 usePerTestIsolation();
 
