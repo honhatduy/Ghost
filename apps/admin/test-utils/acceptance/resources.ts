@@ -327,7 +327,13 @@ export interface FakeMembersOptions {
  * Members list fake (passthrough): serves the declared members and captures
  * every browse request for outgoing-NQL assertions. Also serves the page's
  * filter-bar lookups — labels from the declared members plus
- * `options.labels`, tiers from `options.tiers`; offers/newsletters empty.
+ * `options.labels`, tiers from `options.tiers`; offers, newsletters and custom
+ * field definitions empty.
+ *
+ * Custom field definitions are chrome like the rest: the filter bar asks for them on
+ * every members mount, because what the site defines is what decides whether custom
+ * fields appear at all. A spec that wants some declares them with
+ * `fakeMemberCustomFields` after this call.
  */
 export function fakeMembers(
   members: RespondWith<Member>,
@@ -340,6 +346,7 @@ export function fakeMembers(
   fakeTiers(tiers);
   fakeOffers([]);
   newslettersResource([]);
+  fakeMemberCustomFields([]);
   return membersResource(members);
 }
 

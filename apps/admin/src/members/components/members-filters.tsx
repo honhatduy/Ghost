@@ -21,7 +21,6 @@ import {
 import { getSiteTimezone } from '@tryghost/admin-x-framework/utils/get-site-timezone';
 import { useBrowseNewsletters } from '@tryghost/admin-x-framework/api/newsletters';
 import { useBrowseOffers } from '@tryghost/admin-x-framework/api/offers';
-import { useFeatureFlag } from '@tryghost/admin-x-framework/hooks';
 import {
   useBrowseMemberCustomFields,
   useBrowseMemberCustomFieldsIncludingArchived,
@@ -122,9 +121,15 @@ const MembersFilters: React.FC<MembersFiltersProps> = ({
   const emailValueSource = useEmailPostValueSource();
   const labelValueSource = useLabelValueSource();
   const { valueSource: tierValueSource, hasMultipleTiers } = useTierValueSource();
-  const customFieldsEnabled = useFeatureFlag('membersCustomFields');
-  // The picker lists active fields — the endpoint the members page has always used.
-  const { data: customFieldsData } = useBrowseMemberCustomFields({ enabled: customFieldsEnabled });
+  // The picker lists active fields — the endpoint the members page has always used. A
+  // site that defines none gets an empty list, and no custom field entries in the picker.
+  //
+  // A failure is not worth a toast on a screen the publisher came to for something else,
+  // and Admin can run against a Core that predates this endpoint entirely: either way the
+  // picker simply offers no custom fields, which is what a site without them looks like.
+  const { data: customFieldsData } = useBrowseMemberCustomFields({
+    defaultErrorHandler: false,
+  });
   const customFields = customFieldsData?.members_custom_fields ?? EMPTY_CUSTOM_FIELDS;
   const referencedCustomFieldKeys = useMemo(
     () =>
@@ -141,7 +146,8 @@ const MembersFilters: React.FC<MembersFiltersProps> = ({
   // ones, so a saved segment on a since-archived field still renders its read-only pill.
   // Skipped otherwise, so the common members view makes no extra request.
   const { data: archivedCustomFieldsData } = useBrowseMemberCustomFieldsIncludingArchived({
-    enabled: customFieldsEnabled && referencedCustomFieldKeys.size > 0,
+    enabled: referencedCustomFieldKeys.size > 0,
+    defaultErrorHandler: false,
   });
   const archivedCustomFields = useMemo(
     () =>
@@ -167,7 +173,6 @@ const MembersFilters: React.FC<MembersFiltersProps> = ({
     emailTrackOpens,
     emailTrackClicks,
     siteTimezone,
-    customFieldsEnabled,
     customFields,
     archivedCustomFields,
   });

@@ -464,10 +464,6 @@ module.exports = class CheckoutSessionEventService {
     const tierId = session.metadata?.ghostTierId;
 
     try {
-      if (!this.deps.labsService.isSet('membersCustomFields')) {
-        return;
-      }
-
       if (!tierId) {
         return;
       }

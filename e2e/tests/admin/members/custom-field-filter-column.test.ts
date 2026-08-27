@@ -12,8 +12,9 @@ import { usePerTestIsolation } from '@/helpers/playwright/isolation';
  * them back under the name the publisher gave the field. A unit test can pin the column
  * derivation but cannot prove the values ever arrive.
  *
- * React member detail (the value editor is React-only) plus the membersCustomFields flag
- * that gates the whole feature.
+ * React member detail (the value editor is React-only) plus the membersCustomFields flag,
+ * which is what lets the test define a field in Settings. Filtering and the column itself
+ * need no flag — they follow from a field existing.
  */
 usePerTestIsolation();
 

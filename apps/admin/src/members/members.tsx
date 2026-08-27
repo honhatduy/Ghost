@@ -30,7 +30,6 @@ import { useBrowseConfig } from '@tryghost/admin-x-framework/api/config';
 import { useBrowseMemberCustomFieldsIncludingArchived } from '@tryghost/admin-x-framework/api/member-custom-fields';
 import { useBrowseMembersInfinite } from '@tryghost/admin-x-framework/api/members';
 import { useDebouncedCallback } from 'use-debounce';
-import { useFeatureFlag } from '@tryghost/admin-x-framework/hooks';
 import { useLocation, useSearchParams } from '@tryghost/admin-x-framework';
 import { useMultipleActiveSubscriptionsCount } from './hooks/use-multiple-active-subscriptions-count';
 
@@ -78,16 +77,18 @@ const MembersPage: React.FC<MembersPageProps> = ({
   //
   // Only a filter on a custom field earns a column, and naming one is all these are for,
   // so the fetch waits for a filter rather than riding every visit to the members list.
-  const customFieldsEnabled = useFeatureFlag('membersCustomFields');
   const hasCustomFieldFilter = useMemo(
     () => filters.some((filter) => filter.field.startsWith(CUSTOM_FIELDS_PREFIX)),
     [filters],
   );
+  // Naming a column is all this is for, so a failure — including a Core that predates the
+  // endpoint — costs the column header its name and nothing else. Not worth a toast.
   const { data: customFieldsData } = useBrowseMemberCustomFieldsIncludingArchived({
-    enabled: customFieldsEnabled && hasCustomFieldFilter,
+    enabled: hasCustomFieldFilter,
+    defaultErrorHandler: false,
   });
-  // Left undefined until the fetch lands (and while the flag is off) rather than defaulted
-  // to an empty array, so the identity the memos below depend on stays stable.
+  // Left undefined until the fetch lands (and while no filter names one) rather than
+  // defaulted to an empty array, so the identity the memos below depend on stays stable.
   const customFields = customFieldsData?.members_custom_fields;
 
   const activeColumns = useMemo(() => {

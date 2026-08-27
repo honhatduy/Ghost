@@ -761,11 +761,11 @@ describe('Import members custom fields', () => {
     await expect.element(importMembersScreen.leaveConfirmationText()).toBeVisible();
   });
 
-  // The redesigned dialog ships on its own flag, ahead of custom fields. Off, it has to be a
-  // plain mapping of columns onto the member fields Ghost already has, with nothing about
-  // custom fields anywhere in it — including on a site that has some defined.
-  describe('with custom fields off', () => {
-    it('offers no custom field, and no way to make one', async () => {
+  // Mapping a column onto a field the site already defines is not the flag's business —
+  // what the site defines is. What the flag decides is whether this dialog may define a
+  // new one, so off, the fields are all still offered and only the way to add one goes.
+  describe('without field management', () => {
+    it('offers the defined fields, but no way to make another', async () => {
       const { browseApi } = fakeCustomFieldsWorld([NICKNAME_FIELD]);
       await renderAdminApp('/members', WITHOUT_CUSTOM_FIELDS);
       await openMappingStep();
@@ -775,13 +775,12 @@ describe('Import members custom fields', () => {
 
       // Exact, or "Email" also matches "Subscribed to emails".
       await expect.element(importMembersScreen.option('Email', { exact: true })).toBeVisible();
-      await expect.element(importMembersScreen.option('Nickname')).not.toBeInTheDocument();
+      await expect.element(importMembersScreen.option('Nickname')).toBeVisible();
       await expect.element(importMembersScreen.addCustomFieldOption()).not.toBeInTheDocument();
 
-      // Not merely unrendered: the definitions are never asked for. That query also gates the
-      // first parse of the file, so leaving it enabled and unanswerable would hold the mapping
-      // step on a spinner — which reaching the table above already rules out.
-      expect(browseApi.requests).toHaveLength(0);
+      // The definitions are asked for whatever the flag says: they are what the mapping
+      // step offers, and that query also gates the first parse of the file.
+      expect(browseApi.requests.length).toBeGreaterThan(0);
     });
 
     it('says no field matches a search rather than offering to make one', async () => {

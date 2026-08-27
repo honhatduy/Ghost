@@ -128,10 +128,11 @@ export type Member = {
   };
   last_seen_at: string | null;
   last_commented_at: string | null;
-  // Custom field values keyed by field key, present only when requested via
-  // `include=custom_fields` (behind the `membersCustomFields` flag). Values
-  // are type-dependent: string for text-backed fields, an object for
-  // composites like address — hence `unknown`; consumers narrow per field type.
+  // Custom field values keyed by field key. A read carries them unasked; a browse only
+  // when it asks via `include=custom_fields`. Either way the key is absent entirely on a
+  // site that defines no fields, which is why it is optional. Values are type-dependent:
+  // string for text-backed fields, an object for composites like address — hence
+  // `unknown`; consumers narrow per field type.
   custom_fields?: Record<string, unknown>;
   can_comment?: boolean;
   commenting?: {
@@ -545,8 +546,8 @@ export interface EditMemberData {
   tiers?: Array<{ id: string; expiry_at?: string | null }>;
   // Merge semantics: only the keys present are written; `null` clears a
   // value. The value union is derived from the shared schemas, so a field type
-  // added there is writable here without this line being edited. Requires the
-  // `membersCustomFields` flag server-side.
+  // added there is writable here without this line being edited. Every key is judged
+  // against the site's definitions, so naming one it does not define is refused.
   custom_fields?: Record<string, FieldValue | null>;
 }
 

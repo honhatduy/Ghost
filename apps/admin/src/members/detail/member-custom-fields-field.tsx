@@ -304,7 +304,10 @@ const MemberCustomFieldsField: React.FC<MemberCustomFieldsFieldProps> = ({
   customFields,
   disabled,
 }) => {
-  const { data, isLoading } = useBrowseMemberCustomFields();
+  // The definitions decide whether this section exists at all, so a failure — including a
+  // Core that predates the endpoint — leaves the section absent rather than toasting on a
+  // member the publisher opened for something else.
+  const { data, isLoading } = useBrowseMemberCustomFields({ defaultErrorHandler: false });
   const fields = data?.members_custom_fields ?? [];
   const values = getEditableCustomFieldValues(customFields);
   const [editingField, setEditingField] = React.useState<MemberCustomField | null>(null);

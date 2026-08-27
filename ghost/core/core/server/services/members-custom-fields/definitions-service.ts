@@ -118,6 +118,23 @@ export class CustomFieldDefinitionsService {
     this.getMaxDefinitions = getMaxDefinitions;
   }
 
+  /**
+   * Whether this site defines any custom fields at all, in any status.
+   *
+   * This is what decides whether a member payload carries a `custom_fields` key, so it
+   * asks about definitions rather than values: a site with fields but no answers to them
+   * yet still holds the shape, and a member who has answered nothing gets an empty
+   * object rather than no key. Archived fields count — a member can still hold a value
+   * against one, and hiding the key would hide that value.
+   *
+   * `select 1 … limit 1` rather than a count: the answer is only ever used as a
+   * boolean, and this runs on every member read.
+   */
+  async hasAny(): Promise<boolean> {
+    const row = await this.knex(TABLE).select(this.knex.raw('1')).first();
+    return Boolean(row);
+  }
+
   async browse(options: { filter?: string } = {}): Promise<CustomField[]> {
     // Archived fields are hidden by default: most surfaces (member details, the
     // filter picker, the importer) only ever want active fields. A caller-

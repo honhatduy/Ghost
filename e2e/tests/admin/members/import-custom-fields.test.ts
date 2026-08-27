@@ -19,7 +19,8 @@ import { usePerTestIsolation } from '@/helpers/playwright/isolation';
  * mapping step both auto-detecting an exported column and taking a hand-picked target.
  *
  * Behind two flags: membersImportRedesign serves the mapping step this drives, and
- * membersCustomFields is what puts custom fields into it.
+ * membersCustomFields is what lets the test define the fields in Settings. Mapping a
+ * column onto a field that already exists needs neither.
  */
 usePerTestIsolation();
 

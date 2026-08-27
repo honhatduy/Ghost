@@ -77,39 +77,33 @@ export function ImportMembersModal({
   const { mutateAsync: importMembers } = useImportMembers();
   const importMemberTier = useFeatureFlag('importMemberTier');
 
-  // Whether custom fields exist at all is their own flag's answer, not this dialog's: the
-  // redesigned import ships on `membersImportRedesign` and has to be a plain column-to-member-field
-  // mapper while custom fields are still an experiment. Off, they are absent from every part of
-  // this file — not fetched, not offered as a target, not creatable.
-  const customFieldsEnabled = useFeatureFlag('membersCustomFields');
+  // Mapping onto a field the site already defines is not this dialog's decision, nor a
+  // flag's: a site that defines none gets an empty list and no custom field targets. What
+  // the flag decides is whether the mapping step may create a field that does not exist
+  // yet, which is definition management and belongs with the rest of it.
+  const canCreateCustomFields = useFeatureFlag('membersCustomFields');
   // Defined custom fields become mapping targets. Browse returns active fields only, which
-  // are the ones the importer writes to.
+  // are the ones the importer writes to. A failure is handled here, by importing with
+  // membership fields alone, so it needs no toast of its own.
   const { data: customFieldsData, isError: customFieldsFailed } = useBrowseMemberCustomFields({
-    enabled: customFieldsEnabled,
+    defaultErrorHandler: false,
   });
   // A field created from the mapping step is in here the moment it is created: the create
   // mutation puts it into the cached list, so there is no window where a row points at a
   // column the picker cannot name yet.
-  //
-  // The flag is asked again rather than left to the disabled query above: disabling stops the
-  // fetch, not the read, so a cache another screen had warmed would still be served here.
   const customFieldColumns = useMemo(
-    () =>
-      customFieldsEnabled
-        ? memberCustomFieldCsvColumns(customFieldsData?.members_custom_fields ?? [])
-        : [],
-    [customFieldsEnabled, customFieldsData],
+    () => memberCustomFieldCsvColumns(customFieldsData?.members_custom_fields ?? []),
+    [customFieldsData],
   );
   // The file-reader effect waits for this before its first parse: the custom field
   // definitions must be loaded or auto-detection would miss custom_fields.* columns on a
   // fast upload. It flips false -> true once and stays true (a refetch keeps data defined),
   // so readiness never re-triggers the read.
-  // Ready, or never going to be. Neither a failed query nor a disabled one has any
-  // representation in `data`, so waiting on `data` alone leaves the file unparsed and the step
-  // on a spinner with nothing said — for a query whose only job is to add targets to a list.
+  // Ready, or never going to be. A failed query has no representation in `data`, so waiting
+  // on `data` alone leaves the file unparsed and the step on a spinner with nothing said —
+  // for a query whose only job is to add targets to a list.
   // Failing it costs the custom fields; blocking on it costs the import.
-  const customFieldsReady =
-    !customFieldsEnabled || customFieldsData !== undefined || customFieldsFailed;
+  const customFieldsReady = customFieldsData !== undefined || customFieldsFailed;
   // Detection options are read inside the effect through this ref rather than as deps, so
   // a later refetch of the options can't re-run the read and overwrite a mapping the user
   // has begun editing.
@@ -487,7 +481,7 @@ export function ImportMembersModal({
         {(state.status === 'MAPPING' || state.status === 'UPLOADING') &&
           state.fileData !== null && (
             <MappingStep
-              canCreateCustomFields={customFieldsEnabled}
+              canCreateCustomFields={canCreateCustomFields}
               dataPreviewIndex={state.dataPreviewIndex}
               fileData={state.fileData}
               labelPicker={labelPicker}

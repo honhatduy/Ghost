@@ -24,7 +24,8 @@ interface ImportMembersGateProps {
  * to one, until the flag goes and the baseline is deleted.
  *
  * Custom fields are not this flag's decision. The redesign ships whether or not custom fields
- * exist, and asks `membersCustomFields` itself for whether to offer them.
+ * exist, offers whichever ones the site defines, and asks `membersCustomFields` itself only
+ * about creating new ones from the mapping step.
  */
 export function ImportMembersGate(props: ImportMembersGateProps) {
   const importRedesignEnabled = useFeatureFlag('membersImportRedesign');

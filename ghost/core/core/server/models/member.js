@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const _ = require('lodash');
 const { chainTransformers } = require('@tryghost/mongo-utils');
 const config = require('../../shared/config');
-const labs = require('../../shared/labs');
 const { MemberCommentingCodec } = require('../services/members/commenting');
 const {
   CUSTOM_FIELDS_RELATION,
@@ -195,14 +194,10 @@ const Member = ghostBookshelf.Model.extend(
     // every members query routes its filter through (list, CSV export, bulk edit/destroy,
     // count, email send all reach it via findPage or getFilteredCollectionQuery) — so a
     // saved `custom_fields.*` segment works the same everywhere without each call site
-    // wiring it. Runs only behind the flag and only when the filter names the relation; the
-    // transformer maps the public `key`/`value` grammar onto the leaf-row columns.
+    // wiring it. Runs only when the filter names the relation; the transformer maps the
+    // public `key`/`value` grammar onto the leaf-row columns.
     applyDefaultAndCustomFilters(options) {
-      if (
-        labs.isSet('membersCustomFields') &&
-        options.filter &&
-        options.filter.includes(`${CUSTOM_FIELDS_RELATION.tableNameAs}.`)
-      ) {
+      if (options.filter && options.filter.includes(`${CUSTOM_FIELDS_RELATION.tableNameAs}.`)) {
         const transformer = createCustomFieldsFilterTransformer();
         options.mongoTransformer = options.mongoTransformer
           ? chainTransformers(options.mongoTransformer, transformer)
@@ -213,11 +208,11 @@ const Member = ghostBookshelf.Model.extend(
 
     filterRelations() {
       return {
-        // Custom field values are filterable only behind the feature flag. Gating the
-        // relation here (rather than the whole model) means a `custom_fields.*` filter
-        // is simply an unknown relation when the flag is off, and the filter is
-        // rejected — nothing to special-case downstream.
-        ...(labs.isSet('membersCustomFields') ? { custom_fields: CUSTOM_FIELDS_RELATION } : {}),
+        // Registered on every site. A site that has defined no custom fields has no
+        // values either, so the relation resolves to nothing and a `custom_fields.*`
+        // filter matches no members — the same answer it gives for a field that exists
+        // and holds no values, rather than a separate not-here case downstream.
+        custom_fields: CUSTOM_FIELDS_RELATION,
         labels: {
           tableName: 'labels',
           type: 'manyToMany',

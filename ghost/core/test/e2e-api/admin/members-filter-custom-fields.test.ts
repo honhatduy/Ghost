@@ -268,20 +268,18 @@ describe('Members filtering by custom fields', function () {
     });
   });
 
-  describe('behind the flag', function () {
-    it('rejects a custom field filter when the flag is off', async function () {
-      await createField({ name: 'Company' });
-      await createMember({ company: 'Ghost' });
-      mockManager.mockLabsDisabled('membersCustomFields');
+  describe('on a site that defines no fields', function () {
+    it('matches no members rather than refusing the filter', async function () {
+      await createMember();
 
-      // With the feature off the relation is not registered, so the filter
-      // references an unknown relation and the request is rejected rather than
-      // quietly returning custom-field-filtered results.
-      await agent
-        .get(
-          `members/?filter=${encodeURIComponent("(custom_fields.key:'company'+custom_fields.value:'Ghost')")}`,
-        )
-        .expectStatus(400);
+      // The relation is registered on every site, so the filter is understood wherever it
+      // is written. With nothing defined there are no value rows to join, so it matches
+      // nobody — the same answer a filter on a field that exists and holds no values
+      // gives, rather than a separate not-here case for callers to handle.
+      assert.deepEqual(
+        await browse("(custom_fields.key:'company'+custom_fields.value:'Ghost')"),
+        [],
+      );
     });
   });
 
