@@ -23,7 +23,7 @@ const UnsplashSelector: FunctionComponent<UnsplashSelectorProps> = ({
       >
         <button className="absolute right-6 top-6 cursor-pointer" type="button">
           <CloseIcon
-            className="text-grey-400 size-4 stroke-2"
+            className="size-4 stroke-2 text-gray-400"
             data-kg-modal-close-button
             onClick={() => closeModal()}
           />
@@ -35,9 +35,9 @@ const UnsplashSelector: FunctionComponent<UnsplashSelectorProps> = ({
               Unsplash
             </h1>
             <div className="relative w-full max-w-sm">
-              <SearchIcon className="text-grey-700 absolute left-4 top-1/2 size-4 -translate-y-2" />
+              <SearchIcon className="absolute left-4 top-1/2 size-4 -translate-y-2 text-gray-700" />
               <input
-                className="border-grey-300 focus:border-grey-400 h-10 w-full rounded-full border border-solid pl-10 pr-8 font-sans text-md font-normal text-black focus-visible:outline-none"
+                className="h-10 w-full rounded-full border border-solid border-gray-300 pl-10 pr-8 font-sans text-md font-normal text-black focus:border-gray-400 focus-visible:outline-none"
                 placeholder="Search free high-resolution photos"
                 autoFocus
                 data-kg-unsplash-search
