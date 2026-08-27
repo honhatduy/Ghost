@@ -30,7 +30,11 @@ import {
   type StripePort,
 } from '@tryghost/checkout';
 import { JSONError, getErrorMessage } from '@tryghost/admin-x-framework/errors';
-import { type ErrorMessages, useHandleError } from '@tryghost/admin-x-framework/hooks';
+import {
+  type ErrorMessages,
+  useFeatureFlag,
+  useHandleError,
+} from '@tryghost/admin-x-framework/hooks';
 import { Text } from '@tryghost/shade/primitives';
 import {
   type MemberCustomField,
@@ -93,6 +97,19 @@ const refusedDestination = (error: unknown): string | undefined => {
   const port = /^checkout\.(\w+)\.custom_field_key$/.exec(property)?.[1];
   return port && isStripePort(port) ? DESTINATION_ERROR[port] : undefined;
 };
+
+/**
+ * Where a collected value is kept.
+ *
+ * The publisher picks when they can manage fields. Otherwise whatever is already bound
+ * stands, and a collection switched on for the first time lands in the port's default
+ * field, which the server creates if the site does not keep it yet.
+ *
+ * Falling back to what is bound before falling back to the default is the whole point: a
+ * publisher who chose a field of their own while they could manage fields must not have
+ * that choice quietly replaced by a later save made without the pickers.
+ */
+const destinationFor = (port: StripePort, chosen: string | null) => chosen ?? PORT_FIELD[port].key;
 
 export type TierCheckoutCollectionHandle = {
   /**
@@ -274,7 +291,11 @@ const TierCheckoutCollection = forwardRef<
   const { mutateAsync: editCheckoutConfig } = useEditTierCheckoutConfig();
   const handleError = useHandleError();
 
-  const { data: fieldsData } = useBrowseMemberCustomFields();
+  // Binding a collection to a field of the publisher's choosing is field management, so it
+  // rides that flag rather than this card's. Without it the card is toggles only, and the
+  // keys are settled by `destinationFor` instead of by a picker.
+  const canManageFields = useFeatureFlag('membersCustomFields');
+  const { data: fieldsData } = useBrowseMemberCustomFields({ enabled: canManageFields });
   const allFields = fieldsData?.members_custom_fields ?? [];
   // What each collected value may be kept in is the server's rule, so it is read from the
   // shared port table rather than restated here: anything wider would invite a pick the
@@ -324,19 +345,23 @@ const TierCheckoutCollection = forwardRef<
       return undefined;
     };
     if (state.shipping.collect) {
-      newErrors.shippingField = destinationError(
-        state.shipping.addressFieldKey,
-        eligible[STRIPE_PORT.shippingAddress],
-      );
-      newErrors.shippingName = destinationError(
-        state.shipping.nameFieldKey,
-        eligible[STRIPE_PORT.shippingName],
-      );
+      // Only a chosen destination can be wrong. Without the pickers there is nothing here
+      // for the publisher to correct, so the checks that would blame them are not run.
+      if (canManageFields) {
+        newErrors.shippingField = destinationError(
+          state.shipping.addressFieldKey,
+          eligible[STRIPE_PORT.shippingAddress],
+        );
+        newErrors.shippingName = destinationError(
+          state.shipping.nameFieldKey,
+          eligible[STRIPE_PORT.shippingName],
+        );
+      }
       if (state.shipping.countriesMode === 'specific' && !state.shipping.allowedCountries.length) {
         newErrors.shippingCountries = 'Choose at least one country you deliver to';
       }
     }
-    if (state.phone.collect) {
+    if (state.phone.collect && canManageFields) {
       // Two collections MAY share a destination: writes apply in a fixed order and the
       // last wins, which is the designed behaviour for shared fields — so no distinctness
       // rule here, deliberately.
@@ -390,15 +415,25 @@ const TierCheckoutCollection = forwardRef<
                     ...(state.shipping.countriesMode === 'specific'
                       ? { allowed_countries: state.shipping.allowedCountries }
                       : {}),
-                    name: { custom_field_key: state.shipping.nameFieldKey! },
-                    address: { custom_field_key: state.shipping.addressFieldKey! },
+                    name: {
+                      custom_field_key: destinationFor(
+                        STRIPE_PORT.shippingName,
+                        state.shipping.nameFieldKey,
+                      ),
+                    },
+                    address: {
+                      custom_field_key: destinationFor(
+                        STRIPE_PORT.shippingAddress,
+                        state.shipping.addressFieldKey,
+                      ),
+                    },
                   }
                 : { collect: false },
               tax_number: { collect: state.taxNumber.collect },
               phone: state.phone.collect
                 ? {
                     collect: true,
-                    custom_field_key: state.phone.customFieldKey!,
+                    custom_field_key: destinationFor(STRIPE_PORT.phone, state.phone.customFieldKey),
                   }
                 : { collect: false },
             },
@@ -406,7 +441,7 @@ const TierCheckoutCollection = forwardRef<
           setSavedSerialized(JSON.stringify(effectiveState(state)));
           return true;
         } catch (error) {
-          const blamed = refusedDestination(error);
+          const blamed = canManageFields ? refusedDestination(error) : undefined;
           if (blamed) {
             // Reported without a toast, the way the picker's own create does it: shown in
             // place, but a refusal only the server can detect still has to reach error
@@ -425,7 +460,7 @@ const TierCheckoutCollection = forwardRef<
     }),
     // buildErrors and dirty close over render-scope values, so everything they read has
     // to invalidate the handle.
-    [dirty, editCheckoutConfig, fieldsData, handleError, state],
+    [canManageFields, dirty, editCheckoutConfig, fieldsData, handleError, state],
   );
 
   if (failed) {
@@ -525,36 +560,40 @@ const TierCheckoutCollection = forwardRef<
               </Field>
             </Row>
           )}
-          <DestinationRow
-            eligible={eligible}
-            error={errors.shippingField}
-            id="tier-shipping-address-field"
-            label="Save address as"
-            port={STRIPE_PORT.shippingAddress}
-            value={state.shipping.addressFieldKey}
-            onChange={(key) => {
-              setErrors((current) => ({ ...current, shippingField: undefined }));
-              setState((current) => ({
-                ...current,
-                shipping: { ...current.shipping, addressFieldKey: key },
-              }));
-            }}
-          />
-          <DestinationRow
-            eligible={eligible}
-            error={errors.shippingName}
-            id="tier-shipping-name-field"
-            label="Save recipient name as"
-            port={STRIPE_PORT.shippingName}
-            value={state.shipping.nameFieldKey}
-            onChange={(key) => {
-              setErrors((current) => ({ ...current, shippingName: undefined }));
-              setState((current) => ({
-                ...current,
-                shipping: { ...current.shipping, nameFieldKey: key },
-              }));
-            }}
-          />
+          {canManageFields && (
+            <>
+              <DestinationRow
+                eligible={eligible}
+                error={errors.shippingField}
+                id="tier-shipping-address-field"
+                label="Save address as"
+                port={STRIPE_PORT.shippingAddress}
+                value={state.shipping.addressFieldKey}
+                onChange={(key) => {
+                  setErrors((current) => ({ ...current, shippingField: undefined }));
+                  setState((current) => ({
+                    ...current,
+                    shipping: { ...current.shipping, addressFieldKey: key },
+                  }));
+                }}
+              />
+              <DestinationRow
+                eligible={eligible}
+                error={errors.shippingName}
+                id="tier-shipping-name-field"
+                label="Save recipient name as"
+                port={STRIPE_PORT.shippingName}
+                value={state.shipping.nameFieldKey}
+                onChange={(key) => {
+                  setErrors((current) => ({ ...current, shippingName: undefined }));
+                  setState((current) => ({
+                    ...current,
+                    shipping: { ...current.shipping, nameFieldKey: key },
+                  }));
+                }}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -572,7 +611,7 @@ const TierCheckoutCollection = forwardRef<
           }))
         }
       />
-      {state.phone.collect && (
+      {state.phone.collect && canManageFields && (
         <DestinationRow
           eligible={eligible}
           error={errors.phoneField}

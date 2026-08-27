@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { PORT_FIELD } from '@tryghost/checkout';
 import {
   KEY_CHARACTERS,
   mintableKey,
@@ -75,6 +76,17 @@ describe('Custom field key minting', function () {
         KEY_CHARACTERS,
         `minted ${JSON.stringify(key)} from ${JSON.stringify(name)}`,
       );
+    }
+  });
+
+  // A checkout configured without the field management flag has no publisher to pick a
+  // destination, so it sends the port's default key and the field is provisioned under it.
+  // That field must be indistinguishable from one a publisher made by typing the same
+  // name, or the site ends up with two classes of field that only differ by how they
+  // arrived. Nothing enforces it but this.
+  it('mints each checkout port default key from that port default name', function () {
+    for (const [port, field] of Object.entries(PORT_FIELD)) {
+      assert.equal(mintableKey(field.name), field.key, `port ${port}`);
     }
   });
 });

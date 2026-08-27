@@ -52,6 +52,7 @@ const PRIVATE_FEATURES = [
   'pictureImageFormats',
   'getHelperDeduplication',
   'membersCustomFields',
+  'stripeCheckoutCollection',
   'membersImportRedesign',
   'paywallImprovements',
   'tagDetailsReact',

@@ -9,9 +9,14 @@ import type { StripePort } from './field-ports.ts';
  *
  * A key is not a port. `phone` is what Stripe calls what it returns; where it lands is
  * whatever the request said, and `Shipping Phone` is only how that field is listed.
+ *
+ * `key` is where a request lands when the publisher was never asked to choose. It is the
+ * key minting would derive from `name` anyway, so a field provisioned this way is
+ * indistinguishable from one the publisher made by typing that name themselves — there is
+ * no second class of field to reason about later.
  */
 export const PORT_FIELD = {
-  shipping_name: { name: 'Shipping Name', type: 'short_text' },
-  shipping_address: { name: 'Shipping Address', type: 'address' },
-  phone: { name: 'Shipping Phone', type: 'short_text' },
-} as const satisfies Record<StripePort, { name: string; type: FieldType }>;
+  shipping_name: { key: 'shipping_name', name: 'Shipping Name', type: 'short_text' },
+  shipping_address: { key: 'shipping_address', name: 'Shipping Address', type: 'address' },
+  phone: { key: 'shipping_phone', name: 'Shipping Phone', type: 'short_text' },
+} as const satisfies Record<StripePort, { key: string; name: string; type: FieldType }>;

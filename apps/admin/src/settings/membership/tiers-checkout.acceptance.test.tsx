@@ -50,10 +50,15 @@ function stripeSettings(overrides: Parameters<typeof settingsResponse>[0] = {}) 
   });
 }
 
-// The flag lives in settings and config in lockstep, and Stripe rides along in settings.
+// The flags live in settings and config in lockstep, and Stripe rides along in settings.
+//
+// Two of them: `stripeCheckoutCollection` is what puts the card on the tier at all, and
+// `membersCustomFields` is what adds the destination pickers to it. This is the both-on
+// world; the specs at the bottom cover collection without field management.
+const CHECKOUT_LABS = { stripeCheckoutCollection: true, membersCustomFields: true };
 const flagOnBoot = {
-  browseConfig: { response: configResponse({ labs: { membersCustomFields: true } }) },
-  browseSettings: { response: stripeSettings({ labs: { membersCustomFields: true } }) },
+  browseConfig: { response: configResponse({ labs: CHECKOUT_LABS }) },
+  browseSettings: { response: stripeSettings({ labs: CHECKOUT_LABS }) },
 };
 
 const supporterConfig = {
@@ -402,5 +407,70 @@ describe('Tier checkout collection', () => {
     await expect.element(confirmation).toBeVisible();
     await page.getByRole('button', { name: 'Leave' }).click();
     await expect(settingsScreen.tierDetailModal()).toHaveCount(0);
+  });
+
+  // A publisher can be given collection without being given the field editor. The card is
+  // then toggles alone: there is nothing to pick, so nothing to get wrong, and the server
+  // is told which field to keep each answer in on the publisher's behalf.
+  describe('without field management', () => {
+    const collectionOnly = { stripeCheckoutCollection: true, membersCustomFields: false };
+    const collectionOnlyBoot = {
+      browseConfig: { response: configResponse({ labs: collectionOnly }) },
+      browseSettings: { response: stripeSettings({ labs: collectionOnly }) },
+    };
+
+    it('shows the toggles and no destination pickers', async () => {
+      checkoutWorld();
+      await renderAdminApp('/settings', { boot: collectionOnlyBoot });
+
+      const modal = await openSupporterModal();
+      await expect.element(modal.getByLabelText('Collect shipping address')).toBeVisible();
+      await modal.getByLabelText('Collect shipping address').click();
+      await expect(modal.getByLabelText('Save address as')).toHaveCount(0);
+      await expect(modal.getByLabelText('Save recipient name as')).toHaveCount(0);
+    });
+
+    it('saves the port default keys, with nothing to validate', async () => {
+      const putApi = checkoutWorld();
+      await renderAdminApp('/settings', { boot: collectionOnlyBoot });
+
+      const modal = await openSupporterModal();
+      await modal.getByLabelText('Collect shipping address').click();
+      await modal.getByRole('button', { name: 'Save' }).click();
+      await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
+
+      expect(
+        (putApi.lastRequest?.body as { tiers_checkout_config: [object] }).tiers_checkout_config[0],
+      ).toMatchObject({
+        shipping: {
+          collect: true,
+          name: { custom_field_key: 'shipping_name' },
+          address: { custom_field_key: 'shipping_address' },
+        },
+      });
+    });
+
+    // The binding a publisher chose while they could manage fields has to survive a save
+    // made after that ability went away, or turning an unrelated toggle silently moves
+    // where their shipping addresses are kept.
+    it('keeps a binding that was already chosen', async () => {
+      const putApi = checkoutWorld([supporterConfig]);
+      await renderAdminApp('/settings', { boot: collectionOnlyBoot });
+
+      const modal = await openSupporterModal();
+      await modal.getByLabelText('Collect phone number').click();
+      await modal.getByRole('button', { name: 'Save' }).click();
+      await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
+
+      expect(
+        (putApi.lastRequest?.body as { tiers_checkout_config: [object] }).tiers_checkout_config[0],
+      ).toMatchObject({
+        shipping: {
+          collect: true,
+          name: { custom_field_key: nameField.key },
+          address: { custom_field_key: addressField.key },
+        },
+      });
+    });
   });
 });
