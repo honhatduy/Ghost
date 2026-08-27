@@ -6,12 +6,15 @@ import * as gifts from '../gifts';
 import CleanGiftsJob from '../gifts/jobs/clean-gifts-job';
 import ExternalMediaInliner from '../media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../media-inliner/external-media-inliner-job';
+import type MentionController from '../mentions/mention-controller';
+import ProcessWebmentionJob from '../mentions/process-webmention-job';
 
 interface RegisterJobHandlersDependencies {
   jobsService: JobsService;
   db: typeof import('../../data/db');
   logging: typeof import('@tryghost/logging');
   mediaInliner: ExternalMediaInliner;
+  mentionsController: MentionController;
 }
 
 export default function registerJobHandlers({
@@ -19,6 +22,7 @@ export default function registerJobHandlers({
   db,
   logging,
   mediaInliner,
+  mentionsController,
 }: RegisterJobHandlersDependencies): void {
   jobsService.handle(CleanTokensJob, async () => {
     await cleanTokens({ db, logging });
@@ -35,5 +39,9 @@ export default function registerJobHandlers({
 
   jobsService.handle(ExternalMediaInlinerJob, async (job) => {
     await mediaInliner.inline(job.domains);
+  });
+
+  jobsService.handle(ProcessWebmentionJob, async (job) => {
+    await mentionsController.processWebmention(job);
   });
 }

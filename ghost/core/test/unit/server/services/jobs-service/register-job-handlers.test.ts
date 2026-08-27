@@ -5,6 +5,7 @@ import logging from '@tryghost/logging';
 import { JobsService } from '../../../../../core/server/services/jobs-service/jobs-service';
 import ExternalMediaInliner from '../../../../../core/server/services/media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../../../../../core/server/services/media-inliner/external-media-inliner-job';
+import ProcessWebmentionJob from '../../../../../core/server/services/mentions/process-webmention-job';
 
 const registerJobHandlers =
   require('../../../../../core/server/services/jobs-service/register-job-handlers').default;
@@ -14,14 +15,22 @@ describe('register-job-handlers', function () {
   let db: { knex: sinon.SinonStub };
   let loggingStub: sinon.SinonStubbedInstance<typeof logging>;
   let mediaInliner: sinon.SinonStubbedInstance<ExternalMediaInliner>;
+  let mentionsController: { processWebmention: sinon.SinonStub };
 
   beforeEach(function () {
     jobsService = sinon.createStubInstance(JobsService);
     db = { knex: sinon.stub() };
     loggingStub = sinon.stub(logging);
     mediaInliner = sinon.createStubInstance(ExternalMediaInliner);
+    mentionsController = { processWebmention: sinon.stub().resolves() };
 
-    registerJobHandlers({ jobsService, db, logging: loggingStub, mediaInliner });
+    registerJobHandlers({
+      jobsService,
+      db,
+      logging: loggingStub,
+      mediaInliner,
+      mentionsController,
+    });
   });
 
   afterEach(function () {
@@ -73,5 +82,18 @@ describe('register-job-handlers', function () {
     await assert.rejects(async () => {
       await externalMediaInlinerHandler(job);
     }, error);
+  });
+
+  it('runs process-webmention with the injected mentions controller', async function () {
+    const processWebmentionHandler = jobsService.handle.getCall(3).args[1];
+    const job = new ProcessWebmentionJob({
+      source: 'https://source.com/post/',
+      target: 'https://target.com/post/',
+      payload: {},
+    });
+
+    await processWebmentionHandler(job);
+
+    assert.ok(mentionsController.processWebmention.calledOnceWithExactly(job));
   });
 });
