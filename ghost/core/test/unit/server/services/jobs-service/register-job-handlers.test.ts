@@ -6,7 +6,6 @@ import { JobsService } from '../../../../../core/server/services/jobs-service/jo
 import ExternalMediaInliner from '../../../../../core/server/services/media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../../../../../core/server/services/media-inliner/external-media-inliner-job';
 import UpdateCheckJob from '../../../../../core/server/services/update-check/jobs/update-check-job';
-import UpdateCheckBootJob from '../../../../../core/server/services/update-check/jobs/update-check-boot-job';
 
 const registerJobHandlers =
   require('../../../../../core/server/services/jobs-service/register-job-handlers').default;
@@ -122,14 +121,12 @@ describe('register-job-handlers', function () {
   // Under the test env the update check executor exits at its environment
   // gate, so invoking the registered handler proves the wiring without
   // touching the network.
-  it('registers both update-check job types against the shared executor', async function () {
-    // Compare type strings, not class identity: the module under test loads
-    // its job classes through the CJS cache, a different instance from this
-    // file's ESM imports.
+  it('registers the update-check handler', async function () {
+    // Compare the type string, not class identity: the module under test
+    // loads its job class through the CJS cache, a different instance from
+    // this file's ESM import.
     assert.equal(jobsService.handle.getCall(3).args[0].type, 'update-check');
-    assert.equal(jobsService.handle.getCall(4).args[0].type, 'update-check-boot');
 
     await jobsService.handle.getCall(3).args[1](new UpdateCheckJob());
-    await jobsService.handle.getCall(4).args[1](new UpdateCheckBootJob());
   });
 });

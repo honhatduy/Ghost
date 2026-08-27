@@ -9,7 +9,6 @@ import CleanGiftsJob from '../gifts/jobs/clean-gifts-job';
 import ExternalMediaInliner from '../media-inliner/external-media-inliner';
 import ExternalMediaInlinerJob from '../media-inliner/external-media-inliner-job';
 import UpdateCheckJob from '../update-check/jobs/update-check-job';
-import UpdateCheckBootJob from '../update-check/jobs/update-check-boot-job';
 
 const updateCheck = require('../update-check');
 
@@ -62,12 +61,7 @@ export default function registerJobHandlers({
     await mediaInliner.inline(job.domains);
   });
 
-  // Both types run the same check. Delivery is keyed per type, so each class
-  // needs its own registration; the boot and recurring runs keep distinct
-  // log/Sentry identities via the envelope type, not the handler.
-  const runUpdateCheck = async () => {
+  jobsService.handle(UpdateCheckJob, async () => {
     await updateCheck({ rethrowErrors: true });
-  };
-  jobsService.handle(UpdateCheckJob, runUpdateCheck);
-  jobsService.handle(UpdateCheckBootJob, runUpdateCheck);
+  });
 }
