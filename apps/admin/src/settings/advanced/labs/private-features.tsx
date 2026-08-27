@@ -89,12 +89,6 @@ const features: Feature[] = [
     flag: 'paywallImprovements',
   },
   {
-    title: 'Gift subscription durations and delivery',
-    description:
-      'Enables 3 and 6-month gift subscriptions with immediate or scheduled email delivery',
-    flag: 'giftSubCustomization',
-  },
-  {
     title: 'Self-serve archives',
     description:
       'Replaces the individual export buttons with a single "Export data" flow for downloading a full site archive',

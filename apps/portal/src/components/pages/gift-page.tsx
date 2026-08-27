@@ -19,17 +19,17 @@ import { getGiftDurationAttributiveLabel } from '../../utils/gift-redemption-not
 import { ValidateInputForm } from '../../utils/form';
 import { t } from '../../utils/i18n';
 import useCardTilt from '../../utils/use-card-tilt';
-import { formatGiftValue } from './gift-page';
-import GiftDeliveryStep from './beta-gift/delivery-step';
-import GiftPlanStep from './beta-gift/plan-step';
-import GiftPreviewPanel from './beta-gift/preview-panel';
+import { formatGiftValue } from '../../utils/format-gift-value';
+import GiftDeliveryStep from './gift/delivery-step';
+import GiftPlanStep from './gift/plan-step';
+import GiftPreviewPanel from './gift/preview-panel';
 import type {
   GiftDeliveryMethod,
   GiftCadenceDuration,
   GiftFormErrors,
   GiftInputField,
   GiftStep,
-} from './beta-gift/types';
+} from './gift/types';
 
 const validateInputForm = ValidateInputForm as unknown as (data: {
   fields: GiftInputField[];
@@ -58,7 +58,7 @@ function getTierPriceLabel(product: GiftProduct, months: GiftDuration) {
   return formatGiftValue(getGiftPrice(product, months));
 }
 
-const BetaGiftPage = () => {
+const GiftPage = () => {
   const { site, member, brandColor, action, doAction, lastPage } = useContext(
     AppContext,
   ) as GiftPageContext;
@@ -438,4 +438,4 @@ const BetaGiftPage = () => {
   );
 };
 
-export default BetaGiftPage;
+export default GiftPage;

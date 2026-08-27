@@ -455,7 +455,6 @@ describe('Portal Data links:', () => {
 
       const site = {
         ...FixtureSite.singleTier.basic,
-        labs: { giftSubCustomization: true },
         portal_signup_gift_promotion: false,
         portal_account_gift_promotion: false,
       };
@@ -582,8 +581,8 @@ describe('Portal Data links:', () => {
       expect(
         await within(popupIframeDocument).findByText(/You've been gifted a membership/i),
       ).toBeInTheDocument();
-      expect(within(popupIframeDocument).queryByText(/Bronze/i)).toBeInTheDocument();
-      expect(within(popupIframeDocument).queryByText(/1 year/i)).toBeInTheDocument();
+      expect(within(popupIframeDocument).queryAllByText(/Bronze/i)).not.toHaveLength(0);
+      expect(within(popupIframeDocument).queryAllByText(/1 year/i)).not.toHaveLength(0);
       expect(
         within(popupIframeDocument).queryByText(/Five great stories to read every day/i),
       ).toBeInTheDocument();
@@ -618,7 +617,6 @@ describe('Portal Data links:', () => {
     test('opens gift success page for immediate email delivery', async () => {
       const site = {
         ...FixtureSite.singleTier.basic,
-        labs: { giftSubCustomization: true },
       };
       const tierId = site.products.find((product) => product.type === 'paid').id;
       window.location.href = `https://portal.localhost/?stripe=gift-purchase-success&gift_token=abc123&gift_tier=${tierId}&gift_cadence=year&gift_duration=12&gift_delivery=email`;
@@ -649,7 +647,6 @@ describe('Portal Data links:', () => {
     test('opens gift success page with scheduled delivery wording for a future date', async () => {
       const site = {
         ...FixtureSite.singleTier.basic,
-        labs: { giftSubCustomization: true },
       };
       const tierId = site.products.find((product) => product.type === 'paid').id;
       const futureDate = new Date();
