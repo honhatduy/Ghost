@@ -435,6 +435,8 @@ describe('Tier checkout collection', () => {
       await renderAdminApp('/settings', { boot: collectionOnlyBoot });
 
       const modal = await openSupporterModal();
+      await expect.element(modal.getByLabelText('Collect shipping address')).not.toBeChecked();
+
       await modal.getByLabelText('Collect shipping address').click();
       await modal.getByRole('button', { name: 'Save' }).click();
       await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
@@ -458,6 +460,11 @@ describe('Tier checkout collection', () => {
       await renderAdminApp('/settings', { boot: collectionOnlyBoot });
 
       const modal = await openSupporterModal();
+      // The saved configuration has to be on the card before anything is toggled: this
+      // spec is about what happens to a binding that is already there, and a click that
+      // lands while the card is still arriving changes nothing and saves nothing.
+      await expect.element(modal.getByLabelText('Collect shipping address')).toBeChecked();
+
       await modal.getByLabelText('Collect phone number').click();
       await modal.getByRole('button', { name: 'Save' }).click();
       await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
