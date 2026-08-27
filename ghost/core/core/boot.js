@@ -381,6 +381,11 @@ async function initServices({ ghostServer, config, prometheusClient }) {
   const schedulerAdapter = withErrorCapture(adapterManager.getAdapter('scheduling'));
   schedulerAdapter.run();
   await stripe.init();
+  if (ghostServer) {
+    ghostServer.registerCleanupTask(async () => {
+      await stripe.shutdown();
+    }, 'Stripe');
+  }
 
   await Promise.all([
     identityTokens.init(),
