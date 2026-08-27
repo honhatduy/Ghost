@@ -221,11 +221,8 @@ describe('Tier checkout collection', () => {
     await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
     await expect.poll(() => putApi.requests.length).toBe(1);
 
-    const sent = (
-      putApi.lastRequest?.body as {
-        tiers_checkout_config: [{ shipping: { collect: boolean; allowed_countries?: string[] } }];
-      }
-    ).tiers_checkout_config[0];
+    const sent = (putApi.lastRequest?.body as { tiers_checkout_config: [Record<string, unknown>] })
+      .tiers_checkout_config[0];
     expect(sent).toMatchObject({
       shipping: {
         collect: true,
@@ -441,8 +438,11 @@ describe('Tier checkout collection', () => {
       await modal.getByRole('button', { name: 'Save' }).click();
       await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
 
+      // "Saved" is the tier save's signal; the checkout write is chained after it.
+      await expect.poll(() => putApi.requests.length).toBe(1);
       expect(
-        (putApi.lastRequest?.body as { tiers_checkout_config: [object] }).tiers_checkout_config[0],
+        (putApi.lastRequest?.body as { tiers_checkout_config: [Record<string, unknown>] })
+          .tiers_checkout_config[0],
       ).toMatchObject({
         shipping: {
           collect: true,
@@ -460,17 +460,17 @@ describe('Tier checkout collection', () => {
       await renderAdminApp('/settings', { boot: collectionOnlyBoot });
 
       const modal = await openSupporterModal();
-      // The saved configuration has to be on the card before anything is toggled: this
-      // spec is about what happens to a binding that is already there, and a click that
-      // lands while the card is still arriving changes nothing and saves nothing.
       await expect.element(modal.getByLabelText('Collect shipping address')).toBeChecked();
 
       await modal.getByLabelText('Collect phone number').click();
       await modal.getByRole('button', { name: 'Save' }).click();
       await expect.element(modal.getByRole('button', { name: 'Saved' })).toBeVisible();
 
+      // "Saved" is the tier save's signal; the checkout write is chained after it.
+      await expect.poll(() => putApi.requests.length).toBe(1);
       expect(
-        (putApi.lastRequest?.body as { tiers_checkout_config: [object] }).tiers_checkout_config[0],
+        (putApi.lastRequest?.body as { tiers_checkout_config: [Record<string, unknown>] })
+          .tiers_checkout_config[0],
       ).toMatchObject({
         shipping: {
           collect: true,
