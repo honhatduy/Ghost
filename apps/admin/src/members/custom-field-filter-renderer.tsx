@@ -28,8 +28,12 @@ const CustomFieldFilterRenderer: React.FC<CustomRendererProps<string>> = ({
   readOnly,
 }) => {
   // Include-archived so an archived composite field's pill can still resolve its parts
-  // and show which one the saved segment filters on.
-  const { data } = useBrowseMemberCustomFieldsIncludingArchived();
+  // and show which one the saved segment filters on. A failure costs the pill its part
+  // names, not the members screen, so it stays quiet — every other read of this endpoint
+  // does the same, and a toast per rendered pill would be the loudest of them.
+  const { data } = useBrowseMemberCustomFieldsIncludingArchived({
+    defaultErrorHandler: false,
+  });
   const definitions = data?.members_custom_fields ?? [];
 
   const fieldKey = (field.key ?? '').slice(CUSTOM_FIELDS_PREFIX.length);

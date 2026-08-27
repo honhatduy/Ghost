@@ -165,9 +165,14 @@ describe('MembersAPI', function () {
       undefined,
     );
     sinon.assert.calledTwice(MemberBREADService.prototype.read);
-    sinon.assert.calledWithExactly(MemberBREADService.prototype.read.firstCall, {
-      email: 'jamie@example.com',
-    });
+    // Custom fields are asked for off this path: the member is projected through an
+    // allowlist that drops them, so fetching them would be work thrown away on every
+    // themed page view a signed-in member makes.
+    sinon.assert.calledWithExactly(
+      MemberBREADService.prototype.read.firstCall,
+      { email: 'jamie@example.com' },
+      { withCustomFields: false },
+    );
     sinon.assert.calledOnceWithExactly(memberLoginEvent.add, { member_id: 'member_1' });
     sinon.assert.calledOnceWithExactly(giftRedeem, {
       token: 'gift-token-123',

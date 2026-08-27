@@ -15,6 +15,13 @@ const createCustomFieldValuesStub = () => ({
   applyWrite: sinon.stub().resolves(),
 });
 
+// Whether the site defines any fields is what decides a member payload carries them, so
+// the definitions service is as required as the values one. Defaults to a site with none,
+// which is the shape every test here is written against.
+const createCustomFieldDefinitionsStub = (hasAny = false) => ({
+  hasAny: sinon.stub().resolves(hasAny),
+});
+
 describe('MemberBreadService', function () {
   afterEach(function () {
     sinon.restore();
@@ -72,7 +79,6 @@ describe('MemberBreadService', function () {
         stripeService: { configured: true },
         memberAttributionService: { getAttributionFromContext: sinon.stub().resolves(null) },
         emailService: {},
-        labsService: { isSet: sinon.stub().returns(false) },
         newslettersService: { browse: sinon.stub().resolves([]) },
         settingsCache: { get: sinon.stub() },
         emailSuppressionList: { getSuppressionData: getSuppressionDataStub },
@@ -80,6 +86,7 @@ describe('MemberBreadService', function () {
           createUnsubscribeUrl: sinon.stub().returns('http://example.com/unsubscribe'),
         },
         customFieldValues,
+        customFieldDefinitions: createCustomFieldDefinitionsStub(),
       });
 
       // Stub the read method to avoid having to mock all its dependencies
@@ -332,7 +339,6 @@ describe('MemberBreadService', function () {
         stripeService: { configured: stripeConfigured },
         memberAttributionService: { getAttributionFromContext: sinon.stub().resolves(null) },
         emailService: {},
-        labsService: { isSet: sinon.stub().returns(false) },
         newslettersService: { browse: sinon.stub().resolves([]) },
         settingsCache: { get: sinon.stub() },
         emailSuppressionList: { getSuppressionData: getSuppressionDataStub },
@@ -340,6 +346,7 @@ describe('MemberBreadService', function () {
           createUnsubscribeUrl: sinon.stub().returns('http://example.com/unsubscribe'),
         },
         customFieldValues: createCustomFieldValuesStub(),
+        customFieldDefinitions: createCustomFieldDefinitionsStub(),
       });
 
       sinon.stub(service, 'read').resolves({ id: 'member_123' });
@@ -524,9 +531,10 @@ describe('MemberBreadService', function () {
         emailSuppressionList: emailSuppressionListStub,
         nextPaymentCalculator: options.nextPaymentCalculator || nextPaymentCalculator,
         offersAPI: options.offersAPI || defaultOffersAPI,
-        labsService: options.labsService || { isSet: sinon.stub().returns(false) },
         giftService: options.giftService || defaultGiftService,
         customFieldValues: options.customFieldValues || defaultCustomFieldValues,
+        customFieldDefinitions:
+          options.customFieldDefinitions || createCustomFieldDefinitionsStub(),
       });
     };
 
@@ -570,6 +578,30 @@ describe('MemberBreadService', function () {
 
       assert.equal(member.id, memberModelJSON.id);
       assert.equal(member.email, memberModelJSON.email);
+    });
+
+    // The identity reads behind a member's own session pass this, and they are on the path
+    // every themed page view of a signed-in member takes. Everything downstream drops
+    // custom fields, so asking for them costs two queries per page view for nothing.
+    it('asks nothing about custom fields when the caller does not want them', async function () {
+      const customFieldDefinitions = createCustomFieldDefinitionsStub(true);
+      const customFieldValues = createCustomFieldValuesStub();
+      const memberBreadService = getService({ customFieldDefinitions, customFieldValues });
+
+      const member = await memberBreadService.read({ id: MEMBER_ID }, { withCustomFields: false });
+
+      assert.equal(Object.hasOwn(member, 'custom_fields'), false);
+      assert.equal(customFieldDefinitions.hasAny.called, false);
+      assert.equal(customFieldValues.getValuesForMembers.called, false);
+    });
+
+    it('carries custom fields on a site that defines them', async function () {
+      const customFieldDefinitions = createCustomFieldDefinitionsStub(true);
+      const memberBreadService = getService({ customFieldDefinitions });
+
+      const member = await memberBreadService.read({ id: MEMBER_ID });
+
+      assert.deepEqual(member.custom_fields, {});
     });
 
     it('returns a member with subscriptions', async function () {

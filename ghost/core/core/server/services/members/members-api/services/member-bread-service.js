@@ -394,7 +394,14 @@ module.exports = class MemberBREADService {
     }
   }
 
-  async read(data, options = {}) {
+  /**
+   * @param {object} data
+   * @param {object} [options]
+   * @param {boolean} [options.withCustomFields] False to leave custom field values off the
+   *   result. For the identity reads behind a member's own session, which project the
+   *   member through allowlists that have never carried custom fields.
+   */
+  async read(data, { withCustomFields = true, ...options } = {}) {
     const defaultWithRelated = [
       'labels',
       'stripeSubscriptions',
@@ -455,9 +462,14 @@ module.exports = class MemberBREADService {
     const unsubscribeUrl = this.settingsHelpers.createUnsubscribeUrl(member.uuid);
     member.unsubscribe_url = unsubscribeUrl;
 
-    const customFields = await this.fetchCustomFieldValues([member.id]);
-    if (customFields) {
-      member.custom_fields = customFields.get(member.id) ?? {};
+    // Skipped for callers that will drop them anyway — see `withCustomFields`. Worth the
+    // parameter because this read is on the path every themed page view of a signed-in
+    // member takes, and the work here is two queries whose result that path discards.
+    if (withCustomFields) {
+      const customFields = await this.fetchCustomFieldValues([member.id]);
+      if (customFields) {
+        member.custom_fields = customFields.get(member.id) ?? {};
+      }
     }
 
     return member;
