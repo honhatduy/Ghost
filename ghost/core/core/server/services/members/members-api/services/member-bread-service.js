@@ -659,7 +659,10 @@ module.exports = class MemberBREADService {
       const writtenBy = context.integration
         ? { type: 'integration', id: context.integration.id }
         : { type: 'user', id: context.user };
-      await this.customFieldValues.applyWrite(model.id, plannedCustomFields, { writtenBy });
+      await this.customFieldValues.applyWrite(model.id, plannedCustomFields, {
+        writtenBy,
+        executor: options.transacting,
+      });
 
       // Custom fields aren't a member column or relation, so an edit touching
       // only them leaves `model._changed` empty and the save fires nothing.

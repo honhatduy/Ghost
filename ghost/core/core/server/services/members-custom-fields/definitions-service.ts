@@ -119,8 +119,8 @@ export class CustomFieldDefinitionsService {
   }
 
   async hasAnyActive(): Promise<boolean> {
-    const row = await activeFields(this.knex).select(this.knex.raw('1')).first();
-    return Boolean(row);
+    const [field] = await this.list(activeFields(this.knex).limit(1));
+    return Boolean(field);
   }
 
   async browse(options: { filter?: string } = {}): Promise<CustomField[]> {
